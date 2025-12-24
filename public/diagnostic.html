@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文件导入诊断工具</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    .log-container {
+      background: #2d2d2d;
+      border: 1px solid #555;
+      padding: 20px;
+      margin: 20px 0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+    }
+    .log-error { background: #ff4444; color: white; }
+    .log-warn { background: #ffaa00; color: white; }
+    .log-debug { background: #4444ff; color: white; }
+    .log-success { background: #44ff44; color: white; }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
+      background: #007acc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover { background: #0099ff; }
+    .test-result {
+      background: #2d2d2d;
+      border: 1px solid #555;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    .status {
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 3px;
+    }
+    .status-pass { background: #44ff44; color: black; }
+    .status-fail { background: #ff4444; color: white; }
+  </style>
+</head>
+<body>
+  <h1>🔍 文件导入诊断工具</h1>
+
+  <div>
+    <h2>测试步骤</h2>
+    <button onclick="runDiagnostic()">1. 运行完整诊断</button>
+    <button onclick="testFileReader()">2. 测试FileReader</button>
+    <button onclick="testArrayOperations()">3. 测试数组操作</button>
+    <button onclick="clearLog()">清空日志</button>
+  </div>
+
+  <div class="test-result">
+    <h3>诊断结果</h3>
+    <div id="results"></div>
+  </div>
+
+  <div class="log-container">
+    <h3>📊 控制台日志</h3>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    const logContainer = document.getElementById('log');
+    const resultsContainer = document.getElementById('results');
+
+    function addLog(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      const timestamp = new Date().toLocaleTimeString();
+      entry.textContent = `[${timestamp}] ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function clearLog() {
+      logContainer.innerHTML = '';
+      resultsContainer.innerHTML = '';
+      addLog('日志已清空', 'debug');
+    }
+
+    function runDiagnostic() {
+      resultsContainer.innerHTML = '';
+      addLog('=== 开始诊断 ===', 'debug');
+
+      // 测试1: 检查浏览器支持
+      const tests = [
+        { name: 'FileReader API', check: () => typeof FileReader !== 'undefined' },
+        { name: 'File API', check: () => typeof File !== 'undefined' },
+        { name: 'Promise支持', check: () => typeof Promise !== 'undefined' },
+        { name: 'Array.isArray', check: () => typeof Array.isArray === 'function' }
+      ];
+
+      let passed = 0;
+      tests.forEach(test => {
+        const result = test.check();
+        if (result) {
+          addLog(`✅ ${test.name}: 支持`, 'success');
+          passed++;
+        } else {
+          addLog(`❌ ${test.name}: 不支持`, 'error');
+        }
+      });
+
+      // 测试2: 文件读取测试
+      addLog('准备测试文件读取...', 'debug');
+      const testContent = '测试学生1\n测试学生2\n测试学生3';
+      const blob = new Blob([testContent], { type: 'text/plain' });
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        addLog('文件读取成功', 'success');
+        addLog(`读取的内容: "${e.target.result}"`, 'debug');
+
+        // 测试3: 解析逻辑
+        const lines = e.target.result.split(/\r?\n/);
+        const names = lines.map(name => name.trim()).filter(name => name);
+        addLog(`解析出 ${names.length} 个姓名`, 'success');
+        addLog(`姓名列表: ${JSON.stringify(names)}`, 'debug');
+
+        // 测试4: 数组操作
+        const allNames = [...names]; // 模拟importedNames
+        const manualNames = []; // 模拟手动输入
+        const combined = [...allNames, ...manualNames];
+        const uniqueNames = combined.filter((name, index, arr) => arr.indexOf(name) === index);
+
+        addLog(`合并后总数: ${combined.length}`, 'debug');
+        addLog(`去重后总数: ${uniqueNames.length}`, 'success');
+
+        if (uniqueNames.length > 0) {
+          addLog('✅ 文件读取和解析流程正常', 'success');
+          addLog('❌ 如果原页面仍有问题，请检查事件绑定或DOM结构', 'warn');
+        } else {
+          addLog('❌ 发现问题: 去重后数组为空', 'error');
+        }
+      };
+
+      reader.onerror = function(e) {
+        addLog(`文件读取失败: ${e}`, 'error');
+      };
+
+      reader.readAsText(blob, 'UTF-8');
+
+      // 显示测试结果
+      const status = passed === tests.length ? 'status-pass' : 'status-fail';
+      const message = passed === tests.length ? '所有测试通过' : `${passed}/${tests.length} 测试通过`;
+      resultsContainer.innerHTML = `
+        <div class="status ${status}">${message}</div>
+        <p>如果测试通过但原页面仍有问题，请将完整的控制台日志复制给开发者。</p>
+      `;
+    }
+
+    function testFileReader() {
+      addLog('测试FileReader API...', 'debug');
+
+      const testContent = '张三\n李四\n王五';
+      const blob = new Blob([testContent], { type: 'text/plain' });
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        addLog('✅ FileReader 正常工作', 'success');
+        addLog(`内容: ${e.target.result}`, 'debug');
+      };
+
+      reader.onerror = function(e) {
+        addLog('❌ FileReader 出错', 'error');
+      };
+
+      reader.readAsText(blob, 'UTF-8');
+    }
+
+    function testArrayOperations() {
+      addLog('测试数组操作...', 'debug');
+
+      const importedNames = ['张三', '李四', '王五'];
+      const manualNames = [];
+
+      const allNames = [...importedNames, ...manualNames];
+      addLog(`合并数组: ${JSON.stringify(allNames)}`, 'debug');
+
+      const uniqueNames = allNames.filter((name, index, arr) => arr.indexOf(name) === index);
+      addLog(`去重数组: ${JSON.stringify(uniqueNames)}`, 'debug');
+
+      if (uniqueNames.length > 0) {
+        addLog('✅ 数组操作正常', 'success');
+      } else {
+        addLog('❌ 数组操作异常', 'error');
+      }
+    }
+
+    // 页面加载时自动运行诊断
+    window.addEventListener('load', () => {
+      addLog('诊断工具已加载', 'debug');
+      addLog('请点击按钮进行测试', 'debug');
+    });
+  </script>
+</body>
+</html>

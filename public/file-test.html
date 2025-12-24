@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文件导入测试工具</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+      color: white;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    h1 { color: #4ecdc4; }
+    h2 { color: #95e1d3; }
+    .upload-area {
+      border: 3px dashed #4ecdc4;
+      padding: 40px;
+      text-align: center;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin: 20px 0;
+    }
+    .upload-area:hover {
+      background: rgba(78, 205, 196, 0.1);
+      border-color: #95e1d3;
+    }
+    .upload-area.dragover {
+      background: rgba(78, 205, 196, 0.2);
+      border-color: #95e1d3;
+      transform: scale(1.02);
+    }
+    button {
+      background: #4ecdc4;
+      color: #1a1a2e;
+      border: none;
+      padding: 12px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #95e1d3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .result {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 5px;
+      margin: 10px 0;
+      border-left: 4px solid #4ecdc4;
+    }
+    .error {
+      border-left-color: #ff4444;
+      background: rgba(255, 68, 68, 0.1);
+    }
+    .success {
+      border-left-color: #44ff44;
+      background: rgba(68, 255, 68, 0.1);
+    }
+    .warning {
+      border-left-color: #ffaa00;
+      background: rgba(255, 170, 0, 0.1);
+    }
+    .log {
+      background: #000;
+      color: #0f0;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      max-height: 400px;
+      overflow-y: auto;
+      margin: 20px 0;
+    }
+    .log-entry {
+      margin: 3px 0;
+      padding: 2px 0;
+    }
+    .log-debug { color: #4ecdc4; }
+    .log-error { color: #ff4444; }
+    .log-warn { color: #ffaa00; }
+    .log-success { color: #44ff44; }
+    .status {
+      display: inline-block;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    .status-waiting { background: #666; }
+    .status-success { background: #44ff44; color: #000; }
+    .status-error { background: #ff4444; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .data-display {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 5px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 文件导入测试工具</h1>
+  <p>这个工具用于测试点名精灵的文件导入功能，帮助排查问题。</p>
+
+  <div class="container">
+    <h2>📁 文件上传测试</h2>
+    <div class="upload-area" id="uploadArea">
+      <p style="font-size: 20px;">📂 点击选择文件或拖拽文件到此处</p>
+      <p>支持 .txt 和 .csv 格式</p>
+      <input type="file" id="fileInput" style="display: none;" accept=".txt,.csv">
+    </div>
+
+    <div>
+      <button onclick="startTest()" id="startBtn" disabled>🚀 开始点名测试</button>
+      <button onclick="clearData()">🔄 清空数据</button>
+    </div>
+
+    <div id="statusDisplay"></div>
+  </div>
+
+  <div class="grid">
+    <div class="container">
+      <h2>📊 实时数据</h2>
+      <div id="dataDisplay">
+        <p><strong>importedNames数组:</strong> <span id="importedNamesDisplay">[]</span></p>
+        <p><strong>手动输入:</strong> <span id="manualNamesDisplay">[]</span></p>
+        <p><strong>合并后:</strong> <span id="combinedDisplay">[]</span></p>
+        <p><strong>去重后:</strong> <span id="uniqueDisplay">[]</span></p>
+        <p><strong>是否可开始:</strong> <span id="canStartDisplay">否</span></p>
+      </div>
+    </div>
+
+    <div class="container">
+      <h2>📝 手动输入测试</h2>
+      <textarea id="manualInput" rows="6" style="width: 100%; padding: 10px; font-size: 16px;"
+        placeholder="每行输入一个学生姓名&#10;例如:&#10;张三&#10;李四&#10;王五"></textarea>
+      <button onclick="updateManualNames()">📝 更新手动输入</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2>📋 测试日志</h2>
+    <div class="log" id="logDisplay"></div>
+  </div>
+
+  <script>
+    // 测试变量（模拟原应用）
+    let importedNames = [];
+    let isImporting = false;
+    let manualNames = [];
+
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const startBtn = document.getElementById('startBtn');
+    const logDisplay = document.getElementById('logDisplay');
+
+    // 日志函数
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      const timestamp = new Date().toLocaleTimeString();
+      entry.textContent = `[${timestamp}] ${message}`;
+      logDisplay.appendChild(entry);
+      logDisplay.scrollTop = logDisplay.scrollHeight;
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+
+    // 更新数据显示
+    function updateDataDisplay() {
+      document.getElementById('importedNamesDisplay').textContent = JSON.stringify(importedNames);
+      document.getElementById('manualNamesDisplay').textContent = JSON.stringify(manualNames);
+
+      const combined = [...importedNames, ...manualNames];
+      document.getElementById('combinedDisplay').textContent = JSON.stringify(combined);
+
+      const uniqueNames = combined.filter((name, index, arr) => arr.indexOf(name) === index);
+      document.getElementById('uniqueDisplay').textContent = JSON.stringify(uniqueNames);
+
+      const canStart = uniqueNames.length > 0;
+      document.getElementById('canStartDisplay').textContent = canStart ? '✅ 是' : '❌ 否';
+
+      startBtn.disabled = !canStart;
+
+      const statusDisplay = document.getElementById('statusDisplay');
+      if (uniqueNames.length > 0) {
+        statusDisplay.innerHTML = `<div class="status status-success">✅ 可以开始点名 (共${uniqueNames.length}个学生)</div>`;
+      } else if (isImporting) {
+        statusDisplay.innerHTML = `<div class="status status-waiting">⏳ 正在导入文件...</div>`;
+      } else {
+        statusDisplay.innerHTML = `<div class="status status-waiting">⏳ 请先导入文件或输入学生姓名</div>`;
+      }
+    }
+
+    // 处理文件选择
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        log(`文件选择: ${file.name} (${file.size} bytes)`, 'debug');
+        processFile(file);
+      }
+    }
+
+    // 处理文件
+    function processFile(file) {
+      const fileName = file.name;
+      const fileExtension = fileName.split('.').pop().toLowerCase();
+
+      log(`开始处理文件: ${fileName}`, 'debug');
+      isImporting = true;
+      updateDataDisplay();
+
+      if (fileExtension === 'csv') {
+        processCSVFile(file);
+      } else if (fileExtension === 'txt') {
+        processTXTFile(file);
+      } else {
+        log(`不支持的文件格式: ${fileExtension}`, 'error');
+        alert('不支持的文件格式！请选择CSV或TXT文件。');
+        isImporting = false;
+        updateDataDisplay();
+      }
+    }
+
+    // 处理CSV文件
+    function processCSVFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        log('CSV文件读取成功', 'success');
+        const content = e.target.result;
+        log(`文件内容长度: ${content.length} 字符`, 'debug');
+
+        const lines = content.split(/\r?\n/);
+        const names = [];
+
+        lines.forEach((line, index) => {
+          if (line.trim()) {
+            const parts = line.split(',');
+            if (parts[0]) {
+              names.push(parts[0].trim());
+            }
+          }
+        });
+
+        log(`解析出 ${names.length} 个姓名`, 'success');
+        log(`姓名列表: ${JSON.stringify(names)}`, 'debug');
+
+        importedNames = [...importedNames, ...names];
+        isImporting = false;
+        updateDataDisplay();
+      };
+      reader.onerror = function(e) {
+        log(`CSV文件读取失败: ${e}`, 'error');
+        alert('文件读取失败！');
+        isImporting = false;
+        updateDataDisplay();
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    // 处理TXT文件
+    function processTXTFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        log('TXT文件读取成功', 'success');
+        const content = e.target.result;
+        log(`文件内容: "${content}"`, 'debug');
+
+        const names = content.split(/\r?\n/)
+          .map(name => name.trim())
+          .filter(name => name);
+
+        log(`解析出 ${names.length} 个姓名`, 'success');
+        log(`姓名列表: ${JSON.stringify(names)}`, 'debug');
+
+        importedNames = [...importedNames, ...names];
+        isImporting = false;
+        updateDataDisplay();
+      };
+      reader.onerror = function(e) {
+        log(`TXT文件读取失败: ${e}`, 'error');
+        alert('文件读取失败！');
+        isImporting = false;
+        updateDataDisplay();
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    // 更新手动输入
+    function updateManualNames() {
+      const input = document.getElementById('manualInput').value;
+      manualNames = input.split('\n').map(name => name.trim()).filter(name => name);
+      log(`手动输入更新: ${manualNames.length} 个姓名`, 'debug');
+      updateDataDisplay();
+    }
+
+    // 开始测试
+    function startTest() {
+      const combined = [...importedNames, ...manualNames];
+      const uniqueNames = combined.filter((name, index, arr) => arr.indexOf(name) === index);
+
+      log('=== 开始点名测试 ===', 'success');
+      log(`最终学生列表: ${JSON.stringify(uniqueNames)}`, 'success');
+      log(`测试通过: 可以开始点名！`, 'success');
+
+      alert(`✅ 测试成功！\n共 ${uniqueNames.length} 个学生，可以开始点名。`);
+    }
+
+    // 清空数据
+    function clearData() {
+      importedNames = [];
+      manualNames = [];
+      isImporting = false;
+      document.getElementById('manualInput').value = '';
+      log('数据已清空', 'warn');
+      updateDataDisplay();
+    }
+
+    // 事件绑定
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        processFile(file);
+      }
+    });
+    fileInput.addEventListener('change', handleFileSelect);
+    document.getElementById('manualInput').addEventListener('input', updateManualNames);
+
+    // 初始化
+    window.addEventListener('load', () => {
+      log('测试工具已加载', 'success');
+      updateDataDisplay();
+    });
+  </script>
+</body>
+</html>

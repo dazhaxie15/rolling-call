@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>班级随机点名精灵 - 3D特效版 (Mac专用)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    #app {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .header {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      z-index: 100;
+      text-align: center;
+    }
+
+    .header h1 {
+      color: #fff;
+      font-size: 36px;
+      margin-bottom: 15px;
+      text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      font-weight: bold;
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      padding: 12px 20px;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      justify-content: center;
+      max-width: 600px;
+    }
+
+    .btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #FF6B9D 0%, #C44569 100%);
+      color: white;
+      box-shadow: 0 2px 10px rgba(255, 107, 157, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.6);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #A8E6CF 0%, #56CC9D 100%);
+      color: #333;
+      font-weight: bold;
+    }
+
+    .count-selector {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .count-btn {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      border: 2px solid #FFB6C1;
+      background: linear-gradient(135deg, #FFF0F5 0%, #FFB6C1 100%);
+      color: #333;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .count-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 10px rgba(255, 107, 157, 0.4);
+    }
+
+    .count-btn.active {
+      background: linear-gradient(135deg, #FF6B9D 0%, #C44569 100%);
+      border-color: #FF6B9D;
+      color: white;
+      box-shadow: 0 0 15px rgba(255, 107, 157, 0.6);
+    }
+
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    .result-display {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 15px 30px;
+      border: 3px solid #FF6B9D;
+      box-shadow: 0 4px 20px rgba(255, 107, 157, 0.4);
+      display: none;
+    }
+
+    .result-display.show {
+      display: block;
+      animation: bounceIn 0.5s ease-out;
+    }
+
+    @keyframes bounceIn {
+      0% {
+        transform: translateX(-50%) scale(0.3);
+        opacity: 0;
+      }
+      50% {
+        transform: translateX(-50%) scale(1.05);
+      }
+      100% {
+        transform: translateX(-50%) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .result-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #FF6B9D;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .result-list {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .result-item {
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #FFB6C1 0%, #FF69B4 100%);
+      border-radius: 15px;
+      box-shadow: 0 3px 10px rgba(255, 107, 157, 0.3);
+      animation: wiggle 1s ease-in-out infinite;
+    }
+
+    @keyframes wiggle {
+      0%, 100% {
+        transform: rotate(-3deg);
+      }
+      50% {
+        transform: rotate(3deg);
+      }
+    }
+
+    .instructions {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 50;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 20px;
+      border: 3px solid #FFB6C1;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+      max-width: 900px;
+      width: 90%;
+    }
+
+    .instructions h2 {
+      color: #FF6B9D;
+      margin-bottom: 15px;
+      font-size: 28px;
+    }
+
+    .instructions p {
+      color: #666;
+      margin-bottom: 12px;
+      line-height: 1.5;
+      font-size: 16px;
+    }
+
+    .input-area {
+      margin-top: 15px;
+    }
+
+    .input-area textarea {
+      width: 100%;
+      max-width: 350px;
+      height: 150px;
+      background: #FFF9F0;
+      border: 2px solid #FFB6C1;
+      border-radius: 10px;
+      padding: 12px;
+      color: #333;
+      font-size: 15px;
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .file-upload-area {
+      margin-top: 15px;
+      padding: 15px;
+      border: 3px dashed #FFB6C1;
+      border-radius: 15px;
+      text-align: center;
+      transition: all 0.3s;
+      cursor: pointer;
+      background: #FFF9F0;
+    }
+
+    .file-upload-area:hover {
+      border-color: #FF6B9D;
+      background: #FFF0F5;
+      transform: scale(1.02);
+    }
+
+    .file-upload-area.dragover {
+      border-color: #FF6B9D;
+      background: #FFE4E6;
+      transform: scale(1.05);
+    }
+
+    .file-upload-icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+
+    .file-upload-text {
+      color: #666;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .file-upload-btn {
+      background: linear-gradient(135deg, #A8E6CF 0%, #56CC9D 100%);
+      color: #333;
+      border: none;
+      padding: 10px 25px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+      box-shadow: 0 2px 10px rgba(168, 230, 207, 0.4);
+    }
+
+    .file-upload-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(168, 230, 207, 0.6);
+    }
+
+    .file-list {
+      margin-top: 10px;
+      text-align: left;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+
+    .file-item {
+      background: linear-gradient(135deg, #FFF0F5 0%, #FFE4E6 100%);
+      border: 1px solid #FFB6C1;
+      border-radius: 8px;
+      padding: 6px 10px;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: #333;
+    }
+
+    .input-methods {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .input-method {
+      flex: 1;
+      min-width: 280px;
+      max-width: 380px;
+    }
+
+    .input-method h3 {
+      color: #FF6B9D;
+      font-size: 20px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+
+    .hidden {
+      display: none;
+    }
+
+    .audio-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 8px;
+      padding: 6px 10px;
+      background: rgba(255, 182, 193, 0.3);
+      border-radius: 15px;
+    }
+
+    .btn-audio {
+      background: linear-gradient(135deg, #A8E6CF 0%, #56CC9D 100%);
+      border: none;
+      color: #333;
+      padding: 5px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-audio:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(168, 230, 207, 0.5);
+    }
+
+    #volume-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      background: #FFB6C1;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    #volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: #FF6B9D;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    #volume-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: #FF6B9D;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
+
+    #volume-display {
+      font-size: 12px;
+      min-width: 30px;
+      text-align: center;
+      color: #333;
+      font-weight: bold;
+    }
+
+    #volume-slider {
+      margin-left: 8px;
+      width: 80px;
+    }
+
+    .subtitle {
+      color: #FFF;
+      font-size: 16px;
+      margin-bottom: 20px;
+      text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 响应式设计 - 平板设备 */
+    @media (max-width: 1024px) {
+      .header h1 {
+        font-size: 32px;
+      }
+
+      .instructions {
+        max-width: 700px;
+        padding: 20px;
+      }
+
+      .input-method {
+        min-width: 240px;
+      }
+
+      .controls {
+        padding: 10px 15px;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .btn {
+        padding: 7px 16px;
+        font-size: 13px;
+      }
+    }
+
+    /* 响应式设计 - 大屏手机 */
+    @media (max-width: 768px) {
+      body {
+        overflow-x: hidden;
+      }
+
+      .header {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        font-size: 14px;
+      }
+
+      .instructions {
+        max-width: 90%;
+        padding: 15px;
+        top: 45%;
+      }
+
+      .instructions h2 {
+        font-size: 20px;
+        margin-bottom: 10px;
+      }
+
+      .instructions p {
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
+
+      .input-methods {
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .input-method {
+        min-width: 200px;
+        max-width: 100%;
+      }
+
+      .input-method h3 {
+        font-size: 16px;
+        margin-bottom: 8px;
+      }
+
+      .input-area textarea {
+        max-width: 100%;
+        height: 120px;
+        font-size: 14px;
+      }
+
+      .file-upload-area {
+        padding: 12px;
+      }
+
+      .file-upload-icon {
+        font-size: 28px;
+      }
+
+      .file-upload-text {
+        font-size: 12px;
+      }
+
+      .file-upload-btn {
+        padding: 8px 20px;
+        font-size: 13px;
+      }
+
+      .controls {
+        bottom: 10px;
+        padding: 8px 12px;
+        gap: 8px;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .count-selector {
+        justify-content: center;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        font-size: 14px;
+        width: 100%;
+      }
+
+      .audio-controls {
+        justify-content: center;
+        margin-left: 0;
+        padding: 8px;
+      }
+
+      #volume-slider {
+        width: 100px;
+      }
+
+      .result-display {
+        bottom: 70px;
+        padding: 12px 20px;
+      }
+
+      .result-title {
+        font-size: 18px;
+      }
+
+      .result-item {
+        font-size: 16px;
+        padding: 6px 12px;
+      }
+    }
+
+    /* 响应式设计 - 小屏手机 */
+    @media (max-width: 480px) {
+      .header h1 {
+        font-size: 20px;
+      }
+
+      .subtitle {
+        font-size: 12px;
+        margin-bottom: 15px;
+      }
+
+      .instructions {
+        padding: 12px;
+        top: 40%;
+      }
+
+      .instructions h2 {
+        font-size: 18px;
+      }
+
+      .instructions p {
+        font-size: 13px;
+      }
+
+      .input-methods {
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .input-method {
+        width: 100%;
+        min-width: 100%;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        font-size: 13px;
+      }
+
+      .count-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+      }
+
+      .controls {
+        bottom: 8px;
+        padding: 8px 10px;
+      }
+
+      .audio-controls {
+        flex-wrap: wrap;
+      }
+
+      .result-display {
+        bottom: 65px;
+        padding: 10px 15px;
+      }
+
+      .result-title {
+        font-size: 16px;
+        margin-bottom: 8px;
+      }
+
+      .result-item {
+        font-size: 14px;
+        padding: 5px 10px;
+      }
+    }
+
+    /* 横屏手机适配 */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .instructions {
+        top: 50%;
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+
+      .controls {
+        bottom: 8px;
+        padding: 6px 10px;
+      }
+
+      .header {
+        top: 5px;
+      }
+
+      .header h1 {
+        font-size: 18px;
+        margin-bottom: 5px;
+      }
+
+      .subtitle {
+        font-size: 11px;
+        margin-bottom: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="header">
+      <h1>🎲 班级随机点名精灵</h1>
+      <p class="subtitle">✨ 让点名变得更有趣！✨</p>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div id="instructions" class="instructions">
+      <h2>🌟 欢迎来到点名魔法世界！🌟</h2>
+      <p>🎈 这是一个神奇的3D点名系统</p>
+      <p>🎨 学生姓名会在魔法球面上飞舞，抽取时会有惊喜效果哦！</p>
+
+      <div class="input-methods">
+        <div class="input-method" style="max-width: 600px; margin: 0 auto;">
+          <h3>📁 导入学生名单</h3>
+          <div class="file-upload-area" id="file-upload-area">
+            <div class="file-upload-icon">📂</div>
+            <div class="file-upload-text">把文件拖到这里，或点击下面按钮</div>
+            <button class="file-upload-btn" onclick="document.getElementById('file-input').click()">选择文件</button>
+            <input type="file" id="file-input" accept=".csv,.txt,.xlsx,.xls" style="display: none" onchange="handleFileSelect(event)">
+            <div id="file-list" class="file-list"></div>
+          </div>
+          <p style="color: #999; font-size: 12px; margin-top: 8px;">
+            支持格式：Excel (xlsx, xls)、CSV、TXT（每行一个姓名）
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 控制面板 - 移到instructions外，始终可见 -->
+    <div class="controls">
+      <div class="count-selector">
+        <span style="color: #333; font-weight: bold;">🎯 抽取人数：</span>
+        <button class="count-btn active" onclick="selectCount(1, this)">1</button>
+        <button class="count-btn" onclick="selectCount(2, this)">2</button>
+        <button class="count-btn" onclick="selectCount(3, this)">3</button>
+        <button class="count-btn" onclick="selectCount(4, this)">4</button>
+        <button class="count-btn" onclick="selectCount(5, this)">5</button>
+      </div>
+      <button class="btn btn-primary" onclick="startRoll()" id="roll-btn">🎲 开始抽取</button>
+      <button class="btn btn-secondary" onclick="clearResults()">🧹 清空</button>
+
+      <!-- 音效控制面板 -->
+      <div class="audio-controls">
+        <span style="color: #333; font-weight: bold; margin-right: 5px;">🔊</span>
+        <button class="btn btn-audio" onclick="toggleAudio()">开启</button>
+        <label for="volume-slider" style="color: #333; font-size: 12px; margin-left: 5px;">音量</label>
+        <input type="range" id="volume-slider" min="0" max="100" value="80"
+               onchange="adjustVolume(this.value)">
+        <span id="volume-display">80%</span>
+      </div>
+    </div>
+
+    <div id="result-display" class="result-display">
+      <div class="result-title">🎊 本次抽取结果 🎊</div>
+      <div id="result-list" class="result-list"></div>
+      <div style="text-align: center; margin-top: 15px;">
+        <button class="btn btn-secondary" onclick="hideResults()">继续下一次抽取</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 全局变量
+    let scene, camera, renderer, animationId;
+    let nameFragments = [];
+    let students = [];
+    let selectedCount = 1;
+    let isRolling = false;
+    let rollStartTime = 0;  // 记录抽奖开始时间
+
+    // 文件处理相关变量
+    let importedNames = [];
+    let isImporting = false;  // 标记是否正在导入文件
+
+    // 处理文件选择
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        processFile(file);
+      }
+    }
+
+    // 处理拖拽文件
+    function handleDragOver(event) {
+      event.preventDefault();
+      event.currentTarget.classList.add('dragover');
+    }
+
+    function handleDragLeave(event) {
+      event.preventDefault();
+      event.currentTarget.classList.remove('dragover');
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+      event.currentTarget.classList.remove('dragover');
+
+      const file = event.dataTransfer.files[0];
+      if (file) {
+        processFile(file);
+      }
+    }
+
+    // 处理文件
+    function processFile(file) {
+      const fileName = file.name;
+      const fileExtension = fileName.split('.').pop().toLowerCase();
+
+      if (fileExtension === 'csv') {
+        processCSVFile(file);
+      } else if (fileExtension === 'txt') {
+        processTXTFile(file);
+      } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+        processExcelFile(file);
+      } else {
+        alert('不支持的文件格式！请选择Excel (xlsx, xls)、CSV或TXT文件。');
+      }
+    }
+
+    // 处理CSV文件
+    function processCSVFile(file) {
+      isImporting = true;
+      console.log('[DEBUG] 开始导入CSV文件:', file.name);
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const content = e.target.result;
+          const lines = content.split(/\r?\n/);
+          const names = [];
+
+          lines.forEach(line => {
+            if (line.trim()) {
+              // 处理逗号分隔的CSV
+              const parts = line.split(',');
+              if (parts[0] && parts[0].trim()) {
+                names.push(parts[0].trim());
+              }
+            }
+          });
+
+          importedNames = [...importedNames, ...names];
+          console.log('[DEBUG] CSV文件导入完成，共', names.length, '个姓名');
+          console.log('[DEBUG] 当前importedNames数组:', importedNames);
+
+          isImporting = false;
+          displayImportedFiles(file.name, names.length);
+        } catch (error) {
+          console.error('[ERROR] CSV文件处理失败:', error);
+          alert('CSV文件处理失败，请检查文件格式是否正确！');
+          isImporting = false;
+        }
+      };
+      reader.onerror = function(e) {
+        console.error('[ERROR] CSV文件读取失败:', e);
+        alert('文件读取失败，请检查文件是否存在或文件是否损坏！');
+        isImporting = false;
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    // 处理TXT文件
+    function processTXTFile(file) {
+      isImporting = true;
+      console.log('[DEBUG] 开始导入TXT文件:', file.name);
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const content = e.target.result;
+          const names = content.split(/\r?\n/)
+            .map(name => name.trim())
+            .filter(name => name);
+
+          importedNames = [...importedNames, ...names];
+          console.log('[DEBUG] TXT文件导入完成，共', names.length, '个姓名');
+          console.log('[DEBUG] 当前importedNames数组:', importedNames);
+
+          isImporting = false;
+          displayImportedFiles(file.name, names.length);
+        } catch (error) {
+          console.error('[ERROR] TXT文件处理失败:', error);
+          alert('TXT文件处理失败，请检查文件格式是否正确！');
+          isImporting = false;
+        }
+      };
+      reader.onerror = function(e) {
+        console.error('[ERROR] TXT文件读取失败:', e);
+        alert('文件读取失败，请检查文件是否存在或文件是否损坏！');
+        isImporting = false;
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    // 处理Excel文件
+    function processExcelFile(file) {
+      isImporting = true;
+      console.log('[DEBUG] 开始导入Excel文件:', file.name);
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+
+          // 获取第一个工作表
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+
+          // 转换为JSON数组（只取第一列）
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+
+          // 提取姓名（假设姓名在第一列）
+          const names = jsonData
+            .map(row => row[0])  // 取第一列
+            .filter(name => name && typeof name === 'string' && name.trim())  // 过滤空值
+            .map(name => name.trim());
+
+          importedNames = [...importedNames, ...names];
+          console.log('[DEBUG] Excel文件导入完成，共', names.length, '个姓名');
+          console.log('[DEBUG] 当前importedNames数组:', importedNames);
+
+          isImporting = false;
+          displayImportedFiles(file.name, names.length);
+        } catch (error) {
+          console.error('[ERROR] Excel文件处理失败:', error);
+          alert('Excel文件处理失败，请检查文件格式是否正确！');
+          isImporting = false;
+        }
+      };
+      reader.onerror = function(e) {
+        console.error('[ERROR] Excel文件读取失败:', e);
+        alert('文件读取失败，请检查文件是否存在或文件是否损坏！');
+        isImporting = false;
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // 显示导入的文件信息
+    function displayImportedFiles(fileName, count) {
+      const fileList = document.getElementById('file-list');
+      const fileItem = document.createElement('div');
+      fileItem.className = 'file-item';
+      fileItem.textContent = `✅ ${fileName} - 成功导入 ${count} 个姓名`;
+      fileList.appendChild(fileItem);
+
+      // 导入完成后自动开始使用
+      setTimeout(() => {
+        startApp();
+      }, 500);
+    }
+
+    // 斐波那契球面分布算法
+    function fibonacciSphere(count, radius) {
+      const points = [];
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+
+      for (let i = 0; i < count; i++) {
+        const t = (i + 0.5) / count;
+        const phi = Math.acos(1 - 2 * t);
+        const theta = goldenAngle * i;
+
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.sin(phi) * Math.sin(theta);
+        const z = radius * Math.cos(phi);
+
+        points.push({ x, y, z });
+      }
+
+      return points;
+    }
+
+    // 创建名字纹理（优化版 - 增强3D球体效果）
+    function createNameTexture(name, color) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 创建多层渐变背景，增强立体感
+      const gradient = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, 0,
+        canvas.width / 2, canvas.height / 2, canvas.width / 2
+      );
+      gradient.addColorStop(0, color + '80');  // 半透明的颜色中心
+      gradient.addColorStop(0.4, color + '40'); // 过渡层
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0.9)'); // 深色边缘
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 添加更强的外发光效果
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 50;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      // 增大字体大小以提高可读性
+      ctx.font = 'bold 84px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // 绘制文字边框（更粗）
+      ctx.lineWidth = 12;
+      ctx.strokeStyle = color;
+      ctx.strokeText(name, canvas.width / 2, canvas.height / 2);
+
+      // 绘制文字主体（带渐变）
+      const textGradient = ctx.createLinearGradient(
+        canvas.width / 2, canvas.height / 2 - 50,
+        canvas.width / 2, canvas.height / 2 + 50
+      );
+      textGradient.addColorStop(0, '#ffffff');
+      textGradient.addColorStop(0.5, color);
+      textGradient.addColorStop(1, '#ffffff');
+      ctx.fillStyle = textGradient;
+      ctx.fillText(name, canvas.width / 2, canvas.height / 2);
+
+      // 添加高光效果
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 35;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillText(name, canvas.width / 2 - 3, canvas.height / 2 - 3);
+
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    // 初始化Three.js
+    function initThreeJS() {
+      const container = document.getElementById('canvas-container');
+
+      // 检查Three.js是否加载
+      if (typeof THREE === 'undefined') {
+        console.error('[ERROR] Three.js库未加载！请检查网络连接或CDN链接。');
+        alert('错误：Three.js库加载失败，请检查网络连接后刷新页面重试！');
+        return;
+      }
+
+      try {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a1a);
+
+        camera = new THREE.PerspectiveCamera(
+          75,
+          container.clientWidth / container.clientHeight,
+          0.1,
+          1000
+        );
+        camera.position.z = 8;
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // 增强光照系统
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        // 主光源
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        directionalLight.position.set(5, 5, 5);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        // 辅助光源 - 从另一个角度照亮
+        const directionalLight2 = new THREE.DirectionalLight(0x6699ff, 0.4);
+        directionalLight2.position.set(-5, 0, -5);
+        scene.add(directionalLight2);
+
+        // 顶部光源
+        const topLight = new THREE.DirectionalLight(0xff9966, 0.3);
+        topLight.position.set(0, 10, 0);
+        scene.add(topLight);
+
+        // 创建星空背景
+        createStarField();
+
+        animate();
+
+        console.log('[DEBUG] Three.js初始化成功');
+      } catch (error) {
+        console.error('[ERROR] Three.js初始化失败:', error);
+        alert('错误：3D场景初始化失败，请检查浏览器是否支持WebGL！');
+      }
+    }
+
+    // 创建星空背景
+    function createStarField() {
+      const starsGeometry = new THREE.BufferGeometry();
+      const starPositions = [];
+      const starColors = [];
+
+      for (let i = 0; i < 2000; i++) {
+        const x = (Math.random() - 0.5) * 100;
+        const y = (Math.random() - 0.5) * 100;
+        const z = (Math.random() - 0.5) * 100;
+        starPositions.push(x, y, z);
+
+        const color = new THREE.Color();
+        color.setHSL(Math.random() * 0.2 + 0.5, 0.7, 0.9);
+        starColors.push(color.r, color.g, color.b);
+      }
+
+      starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+      starsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
+
+      const starsMaterial = new THREE.PointsMaterial({
+        size: 0.1,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8
+      });
+
+      const stars = new THREE.Points(starsGeometry, starsMaterial);
+      scene.add(stars);
+    }
+
+    // 创建名字碎片（优化版 - 增强3D球体效果）
+    function createNameFragments() {
+      // 清除旧的碎片
+      nameFragments.forEach(fragment => {
+        if (scene && fragment.mesh) {
+          scene.remove(fragment.mesh);
+        }
+      });
+      nameFragments = [];
+
+      if (students.length === 0) return;
+
+      const positions = fibonacciSphere(students.length, 3.5);
+
+      // 优化颜色方案 - 更鲜艳、更适合小学生的色彩
+      const colors = [
+        '#FF6B9D', // 粉红
+        '#4ECDC4', // 薄荷绿
+        '#45B7D1', // 天蓝
+        '#F9CA24', // 金黄
+        '#F0932B', // 橙色
+        '#EB4D4B', // 红色
+        '#6C5CE7', // 紫色
+        '#A29BFE', // 淡紫
+        '#FFA07A', // 浅橙
+        '#98D8C8', // 浅绿
+        '#F7DC6F', // 浅黄
+        '#BB8FCE'  // 浅紫
+      ];
+
+      students.forEach((student, index) => {
+        const color = colors[index % colors.length];
+        const texture = createNameTexture(student.name, color);
+
+        // 增大平面尺寸，增强视觉效果
+        const geometry = new THREE.PlaneGeometry(1.3, 0.65);
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+          opacity: 0.98,
+          depthWrite: false,
+          // 添加发光效果
+          blending: THREE.AdditiveBlending
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        const position = positions[index];
+        mesh.position.set(position.x, position.y, position.z);
+
+        // 存储原始位置信息
+        const originalPosition = {
+          x: position.x,
+          y: position.y,
+          z: position.z
+        };
+
+        scene.add(mesh);
+
+        nameFragments.push({
+          student,
+          mesh,
+          isSelected: false,
+          originalScale: { x: 1, y: 1, z: 1 },
+          originalPosition: originalPosition,
+          floatOffset: Math.random() * Math.PI * 2,
+          color: color
+        });
+      });
+    }
+
+    // 动画循环（增强版 - 优化3D旋转效果）
+    function animate() {
+      animationId = requestAnimationFrame(animate);
+
+      const time = Date.now() * 0.001;
+
+      // 旋转动画 - 增强节奏感和流畅度
+      nameFragments.forEach((fragment, index) => {
+        // 使用原始位置进行球面旋转
+        if (fragment.originalPosition) {
+          // 动态旋转速度 - 在抽奖过程中加速
+          let rotationSpeed = 0.3;
+          if (isRolling) {
+            // 抽奖时加速旋转，6秒内从慢到快再到慢
+            const rollProgress = Math.min((Date.now() - rollStartTime) / 6000, 1);
+            const easeInOut = rollProgress < 0.5
+              ? 2 * rollProgress * rollProgress
+              : 1 - Math.pow(-2 * rollProgress + 2, 2) / 2;
+            rotationSpeed = 0.3 + easeInOut * 1.5; // 速度从0.3到1.8
+          }
+
+          // 多轴旋转 - 让球体更加立体
+          const angleY = time * rotationSpeed + fragment.floatOffset;
+          const angleX = Math.sin(time * 0.2 + index * 0.3) * 0.3;
+          const angleZ = Math.cos(time * 0.15 + index * 0.2) * 0.2;
+
+          // 应用Y轴旋转
+          const cosY = Math.cos(angleY);
+          const sinY = Math.sin(angleY);
+          let x = fragment.originalPosition.x * cosY - fragment.originalPosition.z * sinY;
+          let z = fragment.originalPosition.x * sinY + fragment.originalPosition.z * cosY;
+          let y = fragment.originalPosition.y;
+
+          // 应用X轴旋转
+          const cosX = Math.cos(angleX);
+          const sinX = Math.sin(angleX);
+          const y2 = y * cosX - z * sinX;
+          const z2 = y * sinX + z * cosX;
+          y = y2;
+          z = z2;
+
+          // 应用Z轴旋转
+          const cosZ = Math.cos(angleZ);
+          const sinZ = Math.sin(angleZ);
+          const x3 = x * cosZ - y * sinZ;
+          const y3 = x * sinZ + y * cosZ;
+          x = x3;
+          y = y3;
+
+          fragment.mesh.position.x = x;
+          fragment.mesh.position.y = y;
+          fragment.mesh.position.z = z;
+
+          // 让名字平面与球面法线方向一致（增强立体感）
+          // 计算当前旋转后的位置向量
+          const currentPos = {
+            x: x,
+            y: y,
+            z: z
+          };
+
+          // 计算球面法线方向（从球心指向当前名字位置）
+          const length = Math.sqrt(currentPos.x ** 2 + currentPos.y ** 2 + currentPos.z ** 2);
+          const normal = {
+            x: currentPos.x / length,
+            y: currentPos.y / length,
+            z: currentPos.z / length
+          };
+
+          // 让名字平面的法线指向球心外侧，但保持适当的倾斜角度
+          // 计算与相机的夹角，决定倾斜程度
+          if (camera) {
+            const toCamera = {
+              x: camera.position.x - currentPos.x,
+              y: camera.position.y - currentPos.y,
+              z: camera.position.z - currentPos.z
+            };
+            const toCameraLength = Math.sqrt(toCamera.x ** 2 + toCamera.y ** 2 + toCamera.z ** 2);
+
+            // 计算法线与视线的点积
+            const dotProduct = normal.x * toCamera.x + normal.y * toCamera.y + normal.z * toCamera.z;
+            const cosAngle = dotProduct / (length * toCameraLength);
+
+            // 根据与相机的角度调整朝向（0-1之间，1是完全朝向相机）
+            const tiltFactor = Math.max(0.3, cosAngle); // 保持至少30%的球面感
+
+            // 混合法线和朝向相机的方向
+            const blendedNormal = {
+              x: normal.x * (1 - tiltFactor) + toCamera.x / toCameraLength * tiltFactor,
+              y: normal.y * (1 - tiltFactor) + toCamera.y / toCameraLength * tiltFactor,
+              z: normal.z * (1 - tiltFactor) + toCamera.z / toCameraLength * tiltFactor
+            };
+
+            // 归一化
+            const blendedLength = Math.sqrt(blendedNormal.x ** 2 + blendedNormal.y ** 2 + blendedNormal.z ** 2);
+            const finalNormal = {
+              x: blendedNormal.x / blendedLength,
+              y: blendedNormal.y / blendedLength,
+              z: blendedNormal.z / blendedLength
+            };
+
+            // 让名字朝向这个混合方向
+            const targetPosition = {
+              x: currentPos.x + finalNormal.x * 2,
+              y: currentPos.y + finalNormal.y * 2,
+              z: currentPos.z + finalNormal.z * 2
+            };
+
+            fragment.mesh.lookAt(
+              targetPosition.x,
+              targetPosition.y,
+              targetPosition.z
+            );
+          }
+        }
+
+        // 脉冲动画效果（模拟魔法能量）- 增强
+        const pulseScale = 1 + Math.sin(time * 3 + index * 0.5) * 0.1;
+        if (!fragment.isSelected) {
+          fragment.mesh.scale.set(pulseScale, pulseScale, pulseScale);
+        }
+
+        if (fragment.isSelected) {
+          // 被选中时超大缩放，突出显示
+          const selectedScale = 3.5 + Math.sin(time * 6) * 0.5;
+          fragment.mesh.scale.set(selectedScale, selectedScale, selectedScale);
+          const flash = Math.sin(time * 10) * 0.3 + 1.0;
+          fragment.mesh.material.opacity = flash;
+
+          // 选中的名字移动到屏幕中央前方
+          if (fragment.originalPosition) {
+            // 平滑移动到屏幕中央 (0, 0, 5) 位置
+            const targetX = 0;
+            const targetY = 0;
+            const targetZ = 5;
+
+            // 使用缓动插值
+            const lerpFactor = 0.05;
+            fragment.mesh.position.x += (targetX - fragment.mesh.position.x) * lerpFactor;
+            fragment.mesh.position.y += (targetY - fragment.mesh.position.y) * lerpFactor;
+            fragment.mesh.position.z += (targetZ - fragment.mesh.position.z) * lerpFactor;
+          }
+        } else {
+          // 恢复正常状态
+          fragment.mesh.material.opacity = 0.95;
+        }
+      });
+
+      // 旋转整个场景（增强3D效果）
+      if (scene) {
+        scene.rotation.y += 0.003;
+        scene.rotation.x = Math.sin(time * 0.2) * 0.05;
+      }
+
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    // 窗口大小调整
+    function handleResize() {
+      // 检查camera和renderer是否已初始化
+      if (!camera || !renderer) {
+        console.log('[DEBUG] handleResize: camera或renderer未初始化，跳过调整');
+        return;
+      }
+
+      const container = document.getElementById('canvas-container');
+      if (!container) {
+        console.log('[DEBUG] handleResize: canvas-container不存在，跳过调整');
+        return;
+      }
+
+      console.log('[DEBUG] handleResize: 调整窗口大小');
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    // 开始抽取（增强版）
+    async function startRoll() {
+      if (students.length === 0 || isRolling) {
+        alert('请先输入学生名单！');
+        return;
+      }
+
+      console.log('[DEBUG] 开始抽取过程');
+      isRolling = true;
+      rollStartTime = Date.now();  // 记录抽奖开始时间
+
+      // 激活AudioContext（解决音效问题）
+      if (typeof AudioSystem !== 'undefined' && AudioSystem.audioContext) {
+        try {
+          if (AudioSystem.audioContext.state === 'suspended') {
+            console.log('[DEBUG] 恢复AudioContext状态');
+            await AudioSystem.audioContext.resume();
+            console.log('[DEBUG] AudioContext状态:', AudioSystem.audioContext.state);
+          }
+          // 启动背景音乐
+          AudioSystem.startBackgroundMusic();
+          AudioSystem.play('magicStart');
+          // 播放抽取过程的音效序列
+          AudioSystem.playRollEffect();
+          console.log('[DEBUG] 音效系统已激活');
+        } catch (error) {
+          console.error('[ERROR] 音效播放失败:', error);
+        }
+      } else {
+        console.warn('[WARN] AudioSystem或AudioContext未初始化');
+      }
+
+      // 重置所有选中状态
+      nameFragments.forEach(fragment => {
+        fragment.isSelected = false;
+      });
+
+      // 创建抽取动画效果
+      createRollAnimation();
+    }
+
+    // 创建抽取动画
+    function createRollAnimation() {
+      console.log('[DEBUG] 创建抽取动画');
+
+      // 随机选择学生
+      const selected = [];
+      const available = [...students];
+
+      for (let i = 0; i < selectedCount && available.length > 0; i++) {
+        const randomIndex = Math.floor(Math.random() * available.length);
+        const selectedStudent = available.splice(randomIndex, 1)[0];
+        selected.push(selectedStudent);
+      }
+
+      // 播放名字切换音效
+      if (typeof AudioSystem !== 'undefined') {
+        AudioSystem.play('nameSwitch');
+      }
+
+      // 延迟显示结果，增加悬念（6秒抽奖过程）
+      setTimeout(() => {
+        // 标记选中的学生
+        selected.forEach(selectedStudent => {
+          const fragment = nameFragments.find(f => f.student.name === selectedStudent.name);
+          if (fragment) {
+            fragment.isSelected = true;
+          }
+        });
+
+        // 播放成功音效
+        if (typeof AudioSystem !== 'undefined') {
+          AudioSystem.play('successBell');
+        }
+
+        // 显示结果
+        showResults(selected);
+
+        isRolling = false;
+      }, 6000);
+    }
+
+    // 显示结果
+    function showResults(selectedStudents) {
+      const resultDisplay = document.getElementById('result-display');
+      const resultList = document.getElementById('result-list');
+
+      resultList.innerHTML = '';
+      selectedStudents.forEach(student => {
+        const item = document.createElement('div');
+        item.className = 'result-item';
+        item.textContent = student.name;
+        resultList.appendChild(item);
+      });
+
+      resultDisplay.classList.add('show');
+
+      // 停止外部音频
+      if (typeof AudioSystem !== 'undefined') {
+        AudioSystem.stopLotteryAudio();
+      }
+    }
+
+    // 清空结果
+    function clearResults() {
+      const resultDisplay = document.getElementById('result-display');
+      resultDisplay.classList.remove('show');
+
+      nameFragments.forEach(fragment => {
+        fragment.isSelected = false;
+      });
+    }
+
+    // 隐藏结果显示（点击继续按钮时）
+    function hideResults() {
+      const resultDisplay = document.getElementById('result-display');
+      resultDisplay.classList.remove('show');
+
+      // 保持选中状态显示，不清除
+    }
+
+    // 选择抽取人数
+    function selectCount(count, element) {
+      selectedCount = count;
+
+      // 更新按钮状态
+      document.querySelectorAll('.count-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      if (element) {
+        element.classList.add('active');
+      }
+    }
+
+    // 音效控制函数
+    let audioEnabled = true;
+
+    async function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const btn = document.querySelector('.btn-audio');
+      const volumeSlider = document.getElementById('volume-slider');
+
+      if (audioEnabled) {
+        btn.textContent = '开启';
+        volumeSlider.disabled = false;
+
+        // 激活AudioContext（解决音效问题）
+        if (typeof AudioSystem !== 'undefined' && AudioSystem.audioContext) {
+          try {
+            if (AudioSystem.audioContext.state === 'suspended') {
+              console.log('[DEBUG] 恢复AudioContext状态');
+              await AudioSystem.audioContext.resume();
+            }
+            // 启动背景音乐
+            AudioSystem.startBackgroundMusic();
+            AudioSystem.setEffectsVolume(volumeSlider.value / 100);
+          } catch (error) {
+            console.error('[ERROR] 激活AudioContext失败:', error);
+          }
+        }
+      } else {
+        btn.textContent = '关闭';
+        volumeSlider.disabled = true;
+        if (typeof AudioSystem !== 'undefined') {
+          AudioSystem.setEffectsVolume(0);
+        }
+      }
+
+      console.log('[DEBUG] 音效状态:', audioEnabled ? '开启' : '关闭');
+    }
+
+    function adjustVolume(value) {
+      const display = document.getElementById('volume-display');
+      display.textContent = value + '%';
+
+      if (typeof AudioSystem !== 'undefined') {
+        AudioSystem.setEffectsVolume(value / 100);
+      }
+
+      console.log('[DEBUG] 音量调整为:', value + '%');
+    }
+
+    // 开始应用
+    async function startApp() {
+      console.log('[DEBUG] startApp函数被调用');
+      console.log('[DEBUG] 当前importedNames:', importedNames);
+      console.log('[DEBUG] 是否正在导入文件:', isImporting);
+
+      if (isImporting) {
+        console.warn('[WARN] 文件正在导入中，请稍候...');
+        alert('文件正在导入中，请稍候片刻后再试！');
+        return;
+      }
+
+      // 激活AudioContext（解决音效问题）
+      if (typeof AudioSystem !== 'undefined' && AudioSystem.audioContext) {
+        try {
+          if (AudioSystem.audioContext.state === 'suspended') {
+            console.log('[DEBUG] 恢复AudioContext状态');
+            await AudioSystem.audioContext.resume();
+          }
+          // 启动背景音乐
+          AudioSystem.startBackgroundMusic();
+        } catch (error) {
+          console.error('[ERROR] 激活AudioContext失败:', error);
+        }
+      }
+
+      // 获取导入的名单
+      console.log('[DEBUG] 导入的姓名:', importedNames);
+
+      // 去重
+      const uniqueNames = importedNames.filter((name, index, arr) => arr.indexOf(name) === index);
+      console.log('[DEBUG] 去重后的姓名:', uniqueNames);
+
+      if (uniqueNames.length === 0) {
+        console.error('[ERROR] 没有有效的学生姓名');
+        alert('请先导入学生名单文件！');
+        return;
+      }
+
+      students = uniqueNames.map((name, index) => ({
+        id: index,
+        name: name
+      }));
+
+      document.getElementById('instructions').classList.add('hidden');
+
+      // 确保3D场景已初始化
+      if (!scene || !camera || !renderer) {
+        console.log('[DEBUG] 初始化3D场景');
+        initThreeJS();
+      }
+
+      // 延迟一点创建名字碎片，确保scene已完全准备好
+      setTimeout(() => {
+        console.log('[DEBUG] 创建名字碎片，数量:', students.length);
+        createNameFragments();
+      }, 100);
+
+      // 显示成功信息
+      alert(`成功导入 ${uniqueNames.length} 个学生姓名！`);
+    }
+
+    // 页面加载完成后初始化
+    window.addEventListener('load', () => {
+      window.addEventListener('resize', handleResize);
+
+      // 添加拖拽事件监听器
+      const uploadArea = document.getElementById('file-upload-area');
+      uploadArea.addEventListener('dragover', handleDragOver);
+      uploadArea.addEventListener('dragleave', handleDragLeave);
+      uploadArea.addEventListener('drop', handleDrop);
+    });
+  </script>
+
+  <!-- 加载Three.js库 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="handleScriptLoadError('Three.js')"></script>
+
+  <!-- 加载Howler.js音效库 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js" onerror="handleScriptLoadError('Howler.js')"></script>
+
+  <!-- 加载SheetJS库用于解析Excel文件 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" onerror="handleScriptLoadError('SheetJS')"></script>
+
+  <script>
+    // 处理脚本加载错误
+    function handleScriptLoadError(libraryName) {
+      console.error('[ERROR] ' + libraryName + '库加载失败！');
+      alert('错误：' + libraryName + '库加载失败，请检查网络连接后刷新页面重试！');
+    }
+
+    // 页面加载后检查依赖库
+    window.addEventListener('load', () => {
+      console.log('[DEBUG] 检查依赖库加载状态');
+      console.log('[DEBUG] Three.js:', typeof THREE !== 'undefined' ? '已加载' : '未加载');
+      console.log('[DEBUG] Howler:', typeof Howl !== 'undefined' ? '已加载' : '未加载');
+    });
+  </script>
+
+  <script>
+    // 音效系统
+    const AudioSystem = {
+      // 音效配置
+      sounds: {
+        // 使用Web Audio API生成音效（无需外部文件）
+        magicStart: null,
+        nameSwitch: null,
+        successBell: null,
+        backgroundMusic: null,
+        // 外部音频文件
+        lotteryMusic: null
+      },
+
+      // 音量控制
+      volume: {
+        master: 0.7,
+        music: 0.4,
+        effects: 0.8
+      },
+
+      // 音频上下文
+      audioContext: null,
+
+      // 背景音乐间隔器
+      backgroundMusicInterval: null,
+
+      // 背景音乐创建标记
+      backgroundMusicCreated: false,
+
+      // 外部音频文件引用
+      lotteryAudio: null,
+
+      // 初始化音效系统
+      init() {
+        console.log('[DEBUG] 初始化音效系统');
+        try {
+          // 创建AudioContext
+          this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          console.log('[DEBUG] AudioContext创建成功');
+          this.createSounds();
+          this.loadExternalAudio();
+        } catch (error) {
+          console.error('[ERROR] AudioContext创建失败:', error);
+          console.warn('[WARN] 浏览器不支持Web Audio API，音效功能将被禁用');
+        }
+      },
+
+      // 加载外部音频文件
+      loadExternalAudio() {
+        try {
+          this.lotteryAudio = new Audio('./level-up-373892.mp3');
+          this.lotteryAudio.loop = true;
+          this.lotteryAudio.volume = 0.5;
+          console.log('[DEBUG] 外部音频文件加载成功');
+        } catch (error) {
+          console.error('[ERROR] 外部音频文件加载失败:', error);
+        }
+      },
+
+      // 创建音效（使用Web Audio API生成）
+      createSounds() {
+        if (!this.audioContext) {
+          console.warn('[WARN] AudioContext未初始化，跳过音效创建');
+          return;
+        }
+
+        try {
+          // 创建魔法启动音效
+          this.sounds.magicStart = this.createTone(440, 0.2, 'sine');
+          this.sounds.nameSwitch = this.createTone(660, 0.1, 'triangle');
+          this.sounds.successBell = this.createTone(880, 0.3, 'sine');
+
+          // 创建背景音乐（简单的节拍）
+          this.createBackgroundMusic();
+
+          console.log('[DEBUG] 音效创建完成');
+        } catch (error) {
+          console.error('[ERROR] 音效创建失败:', error);
+        }
+      },
+
+      // 生成音调
+      createTone(frequency, duration, type = 'sine') {
+        if (!this.audioContext) {
+          return {
+            play: () => {
+              // 静默返回
+            }
+          };
+        }
+
+        const audioContext = this.audioContext;
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = frequency;
+        oscillator.type = type;
+
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(this.volume.effects, audioContext.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+
+        return {
+          play: () => {
+            if (!audioContext || audioContext.state === 'suspended') {
+              // 静默返回，不输出警告（因为现在有其他机制处理）
+              return;
+            }
+
+            try {
+              const now = audioContext.currentTime;
+              const osc = audioContext.createOscillator();
+              const gain = audioContext.createGain();
+
+              osc.connect(gain);
+              gain.connect(audioContext.destination);
+
+              osc.frequency.value = frequency;
+              osc.type = type;
+
+              gain.gain.setValueAtTime(0, now);
+              gain.gain.linearRampToValueAtTime(this.volume.effects, now + 0.01);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+              osc.start(now);
+              osc.stop(now + duration);
+            } catch (error) {
+              console.error('[ERROR] 播放音效时出错:', error);
+            }
+          }
+        };
+      },
+
+      // 创建背景音乐（增强版）
+      createBackgroundMusic() {
+        if (!this.audioContext) {
+          return;
+        }
+
+        // 设置标记，表示背景音乐已创建但尚未启动
+        this.backgroundMusicCreated = true;
+
+        console.log('[DEBUG] 背景音乐已创建，等待用户交互后启动');
+      },
+
+      // 启动背景音乐
+      startBackgroundMusic() {
+        if (!this.audioContext || !this.backgroundMusicCreated || this.backgroundMusicInterval) {
+          return;
+        }
+
+        // 创建循环播放的背景节拍
+        this.backgroundMusicInterval = setInterval(() => {
+          try {
+            if (this.volume.music > 0 && this.audioContext.state === 'running') {
+              // 播放低频节拍
+              const beat1 = this.createTone(110, 0.08, 'sine');
+              beat1.play();
+
+              // 添加高频装饰音
+              setTimeout(() => {
+                const beat2 = this.createTone(220, 0.04, 'triangle');
+                beat2.play();
+              }, 100);
+
+              // 添加另一个装饰音
+              setTimeout(() => {
+                const beat3 = this.createTone(330, 0.03, 'sine');
+                beat3.play();
+              }, 200);
+            }
+          } catch (error) {
+            console.error('[ERROR] 播放背景音乐时出错:', error);
+          }
+        }, 600); // 每600ms一个完整的节拍周期
+
+        console.log('[DEBUG] 背景音乐已启动');
+      },
+
+      // 停止背景音乐
+      stopBackgroundMusic() {
+        if (this.backgroundMusicInterval) {
+          clearInterval(this.backgroundMusicInterval);
+          this.backgroundMusicInterval = null;
+          console.log('[DEBUG] 背景音乐已停止');
+        }
+      },
+
+      // 播放抽取过程音效（增强版 - 使用外部音频文件）
+      playRollEffect() {
+        try {
+          if (this.volume.effects <= 0) return;
+
+          // 优先使用外部音频文件
+          if (this.lotteryAudio) {
+            try {
+              this.lotteryAudio.currentTime = 0;
+              this.lotteryAudio.play().then(() => {
+                console.log('[DEBUG] 外部音频文件播放成功');
+              }).catch(error => {
+                console.error('[ERROR] 外部音频播放失败:', error);
+                // 播放失败则使用Web Audio API生成的音效
+                this.playWebAudioRollEffect();
+              });
+            } catch (error) {
+              console.error('[ERROR] 播放外部音频时出错:', error);
+              this.playWebAudioRollEffect();
+            }
+          } else {
+            // 如果外部音频未加载，使用Web Audio API生成的音效
+            this.playWebAudioRollEffect();
+          }
+        } catch (error) {
+          console.error('[ERROR] 播放抽取音效时出错:', error);
+        }
+      },
+
+      // Web Audio API生成的抽取音效（备用方案）
+      playWebAudioRollEffect() {
+        const frequencies = [440, 494, 523, 587, 659, 698, 784, 880];
+        let index = 0;
+
+        const playSequence = () => {
+          if (index < frequencies.length) {
+            const freq = frequencies[index];
+            const tone = this.createTone(freq, 0.06, 'triangle');
+            tone.play();
+            index++;
+            setTimeout(playSequence, 80);
+          }
+        };
+
+        playSequence();
+        console.log('[DEBUG] 使用Web Audio API播放抽取音效序列');
+      },
+
+      // 停止外部音频
+      stopLotteryAudio() {
+        if (this.lotteryAudio) {
+          this.lotteryAudio.pause();
+          this.lotteryAudio.currentTime = 0;
+          console.log('[DEBUG] 外部音频已停止');
+        }
+      },
+
+      // 播放音效
+      play(soundName) {
+        try {
+          const sound = this.sounds[soundName];
+          if (sound && this.volume.effects > 0) {
+            sound.play();
+          }
+        } catch (error) {
+          console.error('[ERROR] 播放音效时出错:', error);
+        }
+      },
+
+      // 设置主音量
+      setMasterVolume(volume) {
+        this.volume.master = Math.max(0, Math.min(1, volume));
+        console.log('[DEBUG] 主音量设置为:', this.volume.master);
+      },
+
+      // 设置音效音量
+      setEffectsVolume(volume) {
+        this.volume.effects = Math.max(0, Math.min(1, volume));
+        console.log('[DEBUG] 音效音量设置为:', this.volume.effects);
+      },
+
+      // 设置音乐音量
+      setMusicVolume(volume) {
+        this.volume.music = Math.max(0, Math.min(1, volume));
+        console.log('[DEBUG] 音乐音量设置为:', this.volume.music);
+      }
+    };
+
+    // 页面加载时初始化音效
+    window.addEventListener('load', () => {
+      AudioSystem.init();
+    });
+  </script>
+</body>
+</html>
